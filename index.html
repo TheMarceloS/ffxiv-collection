@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collection · Eorzea</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@360;480;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4 L40 18 L24 44 L8 18 Z' fill='%23140f08' stroke='%23c6a15b'/%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <header class="mast">
+    <div class="brand">
+      <svg class="crystal" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M24 3 L41 18 L24 45 L7 18 Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M7 18 H41" stroke="currentColor" stroke-width="1"/>
+        <path d="M24 3 V45" stroke="currentColor" stroke-width="0.6" opacity="0.7"/>
+      </svg>
+      <div>
+        <p class="eyebrow">Final Fantasy XIV</p>
+        <h1>Collection</h1>
+      </div>
+    </div>
+    <p class="lede">Minions, mounts, emotes, and Triple Triad cards. Filter by expansion, level, and location, then mark what you already own.</p>
+    <div class="gauges" id="gauges"></div>
+  </header>
+
+  <main class="layout">
+    <aside class="plate filters" aria-label="Filters">
+      <h2>Find an entry</h2>
+      <label class="field">
+        <span>Search</span>
+        <input id="search" type="search" placeholder="Name, place, quest, or rules" autocomplete="off">
+      </label>
+
+      <div class="field">
+        <span id="kind-label">Kind</span>
+        <div class="chips" id="kind-chips" role="group" aria-labelledby="kind-label"></div>
+      </div>
+
+      <div class="field">
+        <span id="exp-label">Expansion</span>
+        <div class="chips" id="exp-chips" role="group" aria-labelledby="exp-label"></div>
+      </div>
+
+      <label class="field">
+        <span>Level</span>
+        <select id="level"></select>
+      </label>
+
+      <label class="field">
+        <span>Location</span>
+        <select id="zone"></select>
+      </label>
+
+      <div class="field">
+        <span id="status-label">Collection</span>
+        <div class="chips" id="status-chips" role="group" aria-labelledby="status-label"></div>
+      </div>
+
+      <button class="text-btn" id="reset" type="button">Clear filters</button>
+    </aside>
+
+    <section class="stage">
+      <article class="plate detail" id="detail" aria-live="polite"></article>
+      <section class="plate ledger" aria-label="Entries">
+        <div class="ledger-head">
+          <h2>Entries</h2>
+          <p id="range"></p>
+        </div>
+        <div class="colhead" aria-hidden="true">
+          <span></span>
+          <span>Name</span>
+          <span>Expansion</span>
+          <span>Lv</span>
+          <span>Location</span>
+          <span>Quest line</span>
+        </div>
+        <div id="rows"></div>
+        <div class="pager">
+          <button type="button" id="prev" class="gold-btn">Previous</button>
+          <p id="page-label"></p>
+          <button type="button" id="next" class="gold-btn">Next</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <p>Source: <a href="https://ffxiv.consolegameswiki.com/">FFXIV Console Games Wiki</a> · patch 7.57 · 26 Oct 2026. Main scenario lines are counted within one expansion chapter. Checked boxes stay in this browser.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
