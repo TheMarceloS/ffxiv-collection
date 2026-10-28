@@ -2,7 +2,8 @@ const DATA = (window.CATALOG || []).slice().sort((a, b) =>
   a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
 );
 const PAGE_SIZE = 18;
-const STORAGE_KEY = "ffxiv-collected";
+const STORE_KEY = "ffxiv-profiles-v1";
+const LEGACY_KEY = "ffxiv-collected";
 
 const EXPANSIONS = [
   ["A Realm Reborn", "#d9d3c7"],
@@ -41,6 +42,7 @@ const STATUSES = [
   ["collected", "Collected"],
 ];
 
+const store = loadStore();
 const state = {
   kind: "all",
   expansion: "all",
@@ -50,7 +52,7 @@ const state = {
   query: "",
   page: 0,
   selected: "",
-  collected: loadCollected(),
+  collected: new Set(activeProfile().collected),
 };
 
 const els = {
@@ -68,19 +70,121 @@ const els = {
   prev: document.getElementById("prev"),
   next: document.getElementById("next"),
   pageLabel: document.getElementById("page-label"),
+  profile: document.getElementById("profile"),
+  profileName: document.getElementById("profile-name"),
+  addProfile: document.getElementById("add-profile"),
+  removeProfile: document.getElementById("remove-profile"),
+  copyLink: document.getElementById("copy-link"),
+  progressLink: document.getElementById("progress-link"),
+  saveNote: document.getElementById("save-note"),
 };
 
-function loadCollected() {
+function newId() {
+  return crypto.randomUUID();
+}
+
+function legacyCollected() {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return new Set(Array.isArray(raw) ? raw : []);
+    const raw = JSON.parse(localStorage.getItem(LEGACY_KEY) || "[]");
+    return Array.isArray(raw) ? raw.filter((id) => typeof id === "string") : [];
   } catch {
-    return new Set();
+    return [];
   }
 }
 
+function loadStore() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (saved && saved.profiles && saved.profiles[saved.active]) return saved;
+  } catch {
+    /* start fresh below */
+  }
+  const id = newId();
+  return {
+    active: id,
+    profiles: {
+      [id]: { name: "Collector", collected: legacyCollected() },
+    },
+  };
+}
+
+function activeProfile() {
+  return store.profiles[store.active];
+}
+
+function saveStore() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(store));
+  localStorage.removeItem(LEGACY_KEY);
+}
+
 function saveCollected() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...state.collected]));
+  activeProfile().collected = [...state.collected];
+  saveStore();
+  els.saveNote.textContent = "Saved in this browser.";
+}
+
+function encodeProgress(collected) {
+  const bytes = new Uint8Array(Math.ceil(DATA.length / 8));
+  DATA.forEach((item, index) => {
+    if (collected.has(item.id)) bytes[index >> 3] |= 1 << (index & 7);
+  });
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function decodeProgress(code) {
+  try {
+    const normalized = String(code).replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const binary = atob(padded);
+    if (binary.length !== Math.ceil(DATA.length / 8)) return null;
+    const ids = [];
+    for (let index = 0; index < DATA.length; index += 1) {
+      if (binary.charCodeAt(index >> 3) & (1 << (index & 7))) ids.push(DATA[index].id);
+    }
+    return ids;
+  } catch {
+    return null;
+  }
+}
+
+function progressUrl() {
+  const url = new URL(location.href);
+  url.hash = `p=${encodeProgress(state.collected)}`;
+  return url.toString();
+}
+
+function progressFromLink() {
+  const code = new URLSearchParams(location.hash.replace(/^#/, "")).get("p");
+  if (!code) return;
+  history.replaceState(null, "", `${location.pathname}${location.search}`);
+  const ids = decodeProgress(code);
+  if (!ids) {
+    els.saveNote.textContent = "This progress link does not match the current catalog.";
+    return;
+  }
+  const same = ids.length === state.collected.size && ids.every((id) => state.collected.has(id));
+  if (same) return;
+  const label = `${ids.length} collected ${ids.length === 1 ? "entry" : "entries"}`;
+  const replace = state.collected.size === 0 || confirm(
+    `Load ${label} from this link into ${activeProfile().name}?`
+  );
+  if (!replace) return;
+  state.collected = new Set(ids);
+  saveCollected();
+  els.saveNote.textContent = `Loaded ${label} from the progress link.`;
+}
+
+function renderProfiles() {
+  const profile = activeProfile();
+  const names = Object.entries(store.profiles);
+  els.profile.innerHTML = names.map(([id, item]) =>
+    `<option value="${esc(id)}"${id === store.active ? " selected" : ""}>${esc(item.name || "Collector")}</option>`
+  ).join("");
+  if (document.activeElement !== els.profileName) {
+    els.profileName.value = profile.name || "";
+  }
+  els.removeProfile.hidden = names.length < 2;
 }
 
 function esc(value) {
@@ -330,6 +434,11 @@ function render() {
   if (!items.some((item) => item.id === state.selected)) {
     state.selected = items[0] ? items[0].id : "";
   }
+  renderProfiles();
+  if (!els.progressLink.hidden) {
+    const nextLink = progressUrl();
+    if (els.progressLink.value !== nextLink) els.progressLink.value = nextLink;
+  }
   renderFilters();
   renderGauges(items.length);
   renderDetail(items.find((item) => item.id === state.selected) || null);
@@ -412,4 +521,81 @@ els.detail.addEventListener("change", (event) => {
   toggleOwned(own.dataset.own, own.checked);
 });
 
+els.profile.addEventListener("change", () => {
+  store.active = els.profile.value;
+  state.collected = new Set(activeProfile().collected);
+  state.page = 0;
+  saveStore();
+  els.progressLink.hidden = true;
+  els.saveNote.textContent = "Saved in this browser.";
+  render();
+  els.profileName.value = activeProfile().name || "";
+});
+
+els.profileName.addEventListener("input", () => {
+  activeProfile().name = els.profileName.value.slice(0, 32);
+  saveStore();
+  const option = els.profile.selectedOptions[0];
+  if (option) option.textContent = activeProfile().name || "Collector";
+});
+
+els.profileName.addEventListener("change", () => {
+  activeProfile().name = els.profileName.value.trim() || "Collector";
+  els.profileName.value = activeProfile().name;
+  saveStore();
+  renderProfiles();
+});
+
+els.addProfile.addEventListener("click", () => {
+  const id = newId();
+  const count = Object.keys(store.profiles).length + 1;
+  store.profiles[id] = { name: `Collector ${count}`, collected: [] };
+  store.active = id;
+  state.collected = new Set();
+  state.page = 0;
+  saveStore();
+  els.progressLink.hidden = true;
+  render();
+  els.profileName.focus();
+  els.profileName.select();
+});
+
+els.removeProfile.addEventListener("click", () => {
+  if (Object.keys(store.profiles).length < 2) return;
+  const name = activeProfile().name || "Collector";
+  if (!confirm(`Remove ${name} and the checks saved for them in this browser?`)) return;
+  delete store.profiles[store.active];
+  store.active = Object.keys(store.profiles)[0];
+  state.collected = new Set(activeProfile().collected);
+  state.page = 0;
+  saveStore();
+  els.progressLink.hidden = true;
+  render();
+});
+
+els.copyLink.addEventListener("click", async () => {
+  const url = progressUrl();
+  els.progressLink.hidden = false;
+  els.progressLink.value = url;
+  els.progressLink.focus();
+  els.progressLink.select();
+  els.saveNote.textContent = "Select the link and copy it.";
+  try {
+    const copied = navigator.clipboard.writeText(url);
+    const timed = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("timeout")), 700);
+    });
+    await Promise.race([copied, timed]);
+    els.saveNote.textContent = "Progress link copied.";
+  } catch {
+    els.saveNote.textContent = "Select the link and copy it.";
+  }
+});
+
+window.addEventListener("hashchange", () => {
+  progressFromLink();
+  render();
+});
+
+progressFromLink();
 render();

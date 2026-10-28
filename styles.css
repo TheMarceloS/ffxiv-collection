@@ -264,6 +264,24 @@ input:focus, select:focus, button:focus-visible {
   font-size: 12px;
 }
 
+.who-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: -4px 0 10px;
+}
+
+.save-note {
+  margin: 0 0 16px;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+#progress-link {
+  font-size: 12px;
+  margin: -2px 0 8px;
+}
+
 .stage { display: grid; gap: 16px; }
 
 .detail h3 {

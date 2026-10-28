@@ -30,6 +30,23 @@
 
   <main class="layout">
     <aside class="plate filters" aria-label="Filters">
+      <h2>Collector</h2>
+      <label class="field">
+        <span>Who is collecting</span>
+        <select id="profile"></select>
+      </label>
+      <label class="field">
+        <span>Name</span>
+        <input id="profile-name" type="text" maxlength="32" autocomplete="nickname" placeholder="Your name">
+      </label>
+      <div class="who-actions">
+        <button class="text-btn" id="add-profile" type="button">New collector</button>
+        <button class="text-btn" id="remove-profile" type="button">Remove</button>
+        <button class="text-btn" id="copy-link" type="button">Copy progress link</button>
+      </div>
+      <input id="progress-link" type="text" readonly hidden aria-label="Progress link">
+      <p class="save-note" id="save-note">Saved in this browser.</p>
+
       <h2>Find an entry</h2>
       <label class="field">
         <span>Search</span>
@@ -90,7 +107,7 @@
   </main>
 
   <footer>
-    <p>Source: <a href="https://ffxiv.consolegameswiki.com/">FFXIV Console Games Wiki</a> · patch 7.57 · 26 Oct 2026. Main scenario lines are counted within one expansion chapter. Checked boxes stay in this browser.</p>
+    <p>Source: <a href="https://ffxiv.consolegameswiki.com/">FFXIV Console Games Wiki</a> · patch 7.57 · 26 Oct 2026. Main scenario lines are counted within one expansion chapter. Each collector’s checks are saved in this browser. A progress link opens that same list on another device.</p>
   </footer>
 
   <script src="data.js"></script>
